@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "UniFi Cellular Setup",
-        "description": "Enter your UniFi controller details. You need an API key (Settings > Admins > your user > API Keys).",
+        "description": "Enter your UniFi controller details. You need an API key (Integrations > Create New API Key).",
         "data": {
           "host": "Controller IP or hostname",
           "api_key": "API Key",
