@@ -108,7 +108,8 @@ class UniFiCellularSimSensor(CoordinatorEntity[UniFiCellularCoordinator], Sensor
         mac = coordinator.data.get("device_mac", "unknown")
         self._attr_unique_id = f"{mac}_sim{slot_index}_{description.key}"
         self._attr_device_info = _build_device_info(coordinator)
-        self._attr_name = f"{slot_label} {description.name or description.key}"
+        # description.name is UNDEFINED (HA sentinel), not None, so use key
+        self._attr_name = f"{slot_label} {description.key.replace('_', ' ').title()}"
 
     @property
     def native_value(self) -> Any:
