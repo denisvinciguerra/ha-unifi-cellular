@@ -16,6 +16,7 @@ from .const import (
     ALL_SENSORS,
     DOMAIN,
     SIM_SENSOR_TEMPLATES,
+    WAN_SENSORS,
     UniFiCellularSensorDescription,
 )
 
@@ -32,9 +33,17 @@ async def async_setup_entry(
 
     entities: list[UniFiCellularSensor] = []
 
-    # Standard sensors (signal, radio, device, ip/geo, wan3)
+    # Standard sensors (signal, radio, device, ip/geo)
     for description in ALL_SENSORS:
         entities.append(UniFiCellularSensor(coordinator, description))
+
+    # WAN health sensors (dynamically named based on detected WAN interface)
+    wan_interface = coordinator.data.get("wan_interface")
+    if wan_interface:
+        for description in WAN_SENSORS:
+            entities.append(
+                UniFiCellularWanSensor(coordinator, description, wan_interface)
+            )
 
     # Per-SIM sensors
     sim_count = coordinator.data.get("sim_count", 0)
@@ -83,6 +92,38 @@ class UniFiCellularSensor(CoordinatorEntity[UniFiCellularCoordinator], SensorEnt
         """Return extra state attributes."""
         if self.entity_description.attr_fn:
             return self.entity_description.attr_fn(self.coordinator.data)
+        return None
+
+
+class UniFiCellularWanSensor(CoordinatorEntity[UniFiCellularCoordinator], SensorEntity):
+    """Representation of a WAN health sensor (dynamically named)."""
+
+    entity_description: UniFiCellularSensorDescription
+    _attr_has_entity_name = True
+
+    def __init__(
+        self,
+        coordinator: UniFiCellularCoordinator,
+        description: UniFiCellularSensorDescription,
+        wan_interface: str,
+    ) -> None:
+        """Initialize the WAN sensor."""
+        super().__init__(coordinator)
+        self.entity_description = description
+        self._wan_interface = wan_interface
+
+        mac = coordinator.data.get("device_mac", "unknown")
+        self._attr_unique_id = f"{mac}_{description.key}"
+        self._attr_device_info = _build_device_info(coordinator)
+        # Replace generic "WAN" prefix with the actual interface name (e.g. "WAN3 availability")
+        friendly_key = description.key.replace("wan_", "").replace("_", " ").title()
+        self._attr_name = f"{wan_interface} {friendly_key}"
+
+    @property
+    def native_value(self) -> Any:
+        """Return the state of the sensor."""
+        if self.entity_description.value_fn:
+            return self.entity_description.value_fn(self.coordinator.data)
         return None
 
 

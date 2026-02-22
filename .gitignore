@@ -30,3 +30,6 @@ desktop.ini
 
 # Environment
 .env
+
+# Release script
+release.ps1

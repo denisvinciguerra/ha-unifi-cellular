@@ -280,31 +280,31 @@ IP_GEO_SENSORS: tuple[UniFiCellularSensorDescription, ...] = (
     ),
 )
 
-# --- WAN3 Health sensors ---
+# --- WAN Health sensors (dynamically associated to detected WAN interface) ---
 
-WAN3_SENSORS: tuple[UniFiCellularSensorDescription, ...] = (
+WAN_SENSORS: tuple[UniFiCellularSensorDescription, ...] = (
     UniFiCellularSensorDescription(
-        key="wan3_availability",
-        translation_key="wan3_availability",
+        key="wan_availability",
+        translation_key="wan_availability",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:check-network",
-        value_fn=lambda d: d.get("wan3_availability"),
+        value_fn=lambda d: d.get("wan_availability"),
     ),
     UniFiCellularSensorDescription(
-        key="wan3_latency_avg",
-        translation_key="wan3_latency_avg",
+        key="wan_latency_avg",
+        translation_key="wan_latency_avg",
         native_unit_of_measurement="ms",
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:timer-outline",
-        value_fn=lambda d: d.get("wan3_latency_avg"),
+        value_fn=lambda d: d.get("wan_latency_avg"),
     ),
     UniFiCellularSensorDescription(
-        key="wan3_uptime",
-        translation_key="wan3_uptime",
+        key="wan_uptime",
+        translation_key="wan_uptime",
         native_unit_of_measurement=UnitOfTime.SECONDS,
         device_class=SensorDeviceClass.DURATION,
-        value_fn=lambda d: d.get("wan3_uptime"),
+        value_fn=lambda d: d.get("wan_uptime"),
     ),
 )
 
@@ -379,5 +379,5 @@ SIM_SENSOR_TEMPLATES: tuple[UniFiCellularSensorDescription, ...] = (
     ),
 )
 
-# All non-SIM sensors combined
-ALL_SENSORS = SIGNAL_SENSORS + RADIO_SENSORS + DEVICE_SENSORS + IP_GEO_SENSORS + WAN3_SENSORS
+# All non-SIM, non-WAN sensors combined
+ALL_SENSORS = SIGNAL_SENSORS + RADIO_SENSORS + DEVICE_SENSORS + IP_GEO_SENSORS

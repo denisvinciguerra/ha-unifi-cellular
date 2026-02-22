@@ -75,14 +75,15 @@ class UniFiCellularCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """Fetch data from UniFi controller."""
         try:
             async with aiohttp.ClientSession() as session:
-                device_data = await self._fetch_device(session)
-                wan3_data = await self._fetch_wan3_health(session)
-                return {**device_data, **wan3_data}
+                devices = await self._fetch_all_devices(session)
+                device_data = self._extract_mbb_metrics(devices)
+                wan_data = await self._fetch_wan_health(session, devices, device_data)
+                return {**device_data, **wan_data}
         except aiohttp.ClientError as err:
             raise UpdateFailed(f"Error communicating with UniFi controller: {err}") from err
 
-    async def _fetch_device(self, session: aiohttp.ClientSession) -> dict[str, Any]:
-        """Fetch MBB device metrics."""
+    async def _fetch_all_devices(self, session: aiohttp.ClientSession) -> list[dict[str, Any]]:
+        """Fetch all devices from the controller."""
         url = f"https://{self.host}{API_DEVICES.format(site=self.site)}"
         headers = {"X-API-Key": self.api_key}
 
@@ -94,7 +95,10 @@ class UniFiCellularCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             resp.raise_for_status()
             data = await resp.json()
 
-        devices = data.get("data", [])
+        return data.get("data", [])
+
+    def _extract_mbb_metrics(self, devices: list[dict[str, Any]]) -> dict[str, Any]:
+        """Find MBB device and extract metrics."""
         device = next((d for d in devices if d.get("type") == DEVICE_TYPE_MBB), None)
         if not device:
             raise UpdateFailed("No UniFi MBB (cellular) device found")
@@ -168,8 +172,45 @@ class UniFiCellularCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         return metrics
 
-    async def _fetch_wan3_health(self, session: aiohttp.ClientSession) -> dict[str, Any]:
-        """Fetch WAN3 health metrics."""
+    def _detect_wan_interface(
+        self, devices: list[dict[str, Any]], cellular_ip: str
+    ) -> str | None:
+        """Detect which WAN interface corresponds to the cellular device.
+
+        Matches the cellular IP from mbb.ip_settings.ipv4_address against
+        the gateway's last_wan_interfaces to find the WAN name.
+        """
+        if not cellular_ip:
+            return None
+
+        for device in devices:
+            wan_interfaces = device.get("last_wan_interfaces", {})
+            if not wan_interfaces:
+                continue
+            for wan_name, wan_info in wan_interfaces.items():
+                if wan_info.get("ip") == cellular_ip:
+                    _LOGGER.debug(
+                        "Detected cellular WAN interface: %s (IP: %s)",
+                        wan_name, cellular_ip,
+                    )
+                    return wan_name
+
+        return None
+
+    async def _fetch_wan_health(
+        self,
+        session: aiohttp.ClientSession,
+        devices: list[dict[str, Any]],
+        device_data: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Fetch WAN health metrics for the dynamically detected interface."""
+        cellular_ip = device_data.get("cellular_ip", "")
+        wan_name = self._detect_wan_interface(devices, cellular_ip)
+
+        if not wan_name:
+            _LOGGER.debug("Could not detect WAN interface for cellular IP %s", cellular_ip)
+            return {"wan_interface": None}
+
         url = f"https://{self.host}{API_HEALTH.format(site=self.site)}"
         headers = {"X-API-Key": self.api_key}
 
@@ -178,21 +219,22 @@ class UniFiCellularCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 url, headers=headers, ssl=self._ssl_context, timeout=aiohttp.ClientTimeout(total=10)
             ) as resp:
                 if resp.status != 200:
-                    return {}
+                    return {"wan_interface": wan_name}
                 data = await resp.json()
         except aiohttp.ClientError:
-            return {}
+            return {"wan_interface": wan_name}
 
         health_data = data.get("data", [])
         for subsystem in health_data:
             if subsystem.get("subsystem") == "wan":
                 uptime_stats = subsystem.get("uptime_stats", {})
-                wan3 = uptime_stats.get("WAN3", {})
-                if wan3:
+                wan_stats = uptime_stats.get(wan_name, {})
+                if wan_stats:
                     return {
-                        "wan3_availability": round(wan3.get("availability", 0), 2),
-                        "wan3_latency_avg": wan3.get("latency_average"),
-                        "wan3_uptime": wan3.get("uptime"),
+                        "wan_interface": wan_name,
+                        "wan_availability": round(wan_stats.get("availability", 0), 2),
+                        "wan_latency_avg": wan_stats.get("latency_average"),
+                        "wan_uptime": wan_stats.get("uptime"),
                     }
 
-        return {}
+        return {"wan_interface": wan_name}
