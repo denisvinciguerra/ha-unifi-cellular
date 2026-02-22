@@ -1,0 +1,74 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "UniFi Cellular Setup",
+        "description": "Enter your UniFi controller details. You need an API key (Settings > Admins > your user > API Keys).",
+        "data": {
+          "host": "Controller IP or hostname",
+          "api_key": "API Key",
+          "site": "Site name",
+          "verify_ssl": "Verify SSL certificate"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to the UniFi controller",
+      "invalid_auth": "Invalid API key",
+      "invalid_site": "Site not found",
+      "no_device": "No UniFi cellular (MBB) device found on this site",
+      "unknown": "Unexpected error"
+    },
+    "abort": {
+      "already_configured": "This device is already configured"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "rsrp": { "name": "RSRP" },
+      "rsrq": { "name": "RSRQ" },
+      "rssi": { "name": "RSSI" },
+      "snr": { "name": "SNR" },
+      "signal_percent": { "name": "Signal strength" },
+      "signal_level": { "name": "Signal level" },
+      "rat": { "name": "Radio access technology" },
+      "rat_mode_active": { "name": "Active RAT mode" },
+      "rat_5g_uw": { "name": "5G Ultra Wideband" },
+      "band": { "name": "Band" },
+      "channel": { "name": "Channel" },
+      "rx_channel": { "name": "RX channel" },
+      "tx_channel": { "name": "TX channel" },
+      "cell_id": { "name": "Cell ID" },
+      "operator": { "name": "Operator" },
+      "mcc": { "name": "MCC" },
+      "mnc": { "name": "MNC" },
+      "country": { "name": "Country" },
+      "roaming": { "name": "Roaming" },
+      "registration_state": { "name": "Registration state" },
+      "connection_state": { "name": "Connection state" },
+      "mbb_mode": { "name": "MBB mode" },
+      "internet": { "name": "Internet" },
+      "uptime": { "name": "Uptime" },
+      "imei": { "name": "IMEI" },
+      "cellular_ip": { "name": "Cellular IP" },
+      "cellular_gateway": { "name": "Cellular gateway" },
+      "mtu": { "name": "MTU" },
+      "public_ip": { "name": "Public IP" },
+      "isp": { "name": "ISP" },
+      "esim_eid": { "name": "eSIM EID" },
+      "wan3_availability": { "name": "WAN3 availability" },
+      "wan3_latency_avg": { "name": "WAN3 latency" },
+      "wan3_uptime": { "name": "WAN3 uptime" },
+      "sim_state": { "name": "State" },
+      "sim_carrier": { "name": "Carrier" },
+      "sim_iccid": { "name": "ICCID" },
+      "sim_active": { "name": "Active" },
+      "sim_esim": { "name": "eSIM" },
+      "sim_rx_bytes": { "name": "Data received" },
+      "sim_tx_bytes": { "name": "Data sent" },
+      "sim_data_limited": { "name": "Data limited" },
+      "sim_apn": { "name": "APN" },
+      "sim_asn": { "name": "ASN" }
+    }
+  }
+}
