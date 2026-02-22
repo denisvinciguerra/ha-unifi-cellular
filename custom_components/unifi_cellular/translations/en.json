@@ -10,6 +10,16 @@
           "site": "Site name",
           "verify_ssl": "Verify SSL certificate"
         }
+      },
+      "reconfigure": {
+        "title": "Reconfigure UniFi Cellular",
+        "description": "Update your UniFi controller connection settings.",
+        "data": {
+          "host": "Controller IP or hostname",
+          "api_key": "API Key",
+          "site": "Site name",
+          "verify_ssl": "Verify SSL certificate"
+        }
       }
     },
     "error": {

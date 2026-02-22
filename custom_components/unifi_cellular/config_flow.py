@@ -115,6 +115,50 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle reconfiguration."""
+        errors: dict[str, str] = {}
+        entry = self.hass.config_entries.async_get_entry(self.context["entry_id"])
+
+        if user_input is not None:
+            try:
+                info = await validate_input(self.hass, user_input)
+            except CannotConnect:
+                errors["base"] = "cannot_connect"
+            except InvalidAuth:
+                errors["base"] = "invalid_auth"
+            except InvalidSite:
+                errors[CONF_SITE] = "invalid_site"
+            except NoDeviceFound:
+                errors["base"] = "no_device"
+            except Exception:
+                _LOGGER.exception("Unexpected exception during reconfigure")
+                errors["base"] = "unknown"
+            else:
+                return self.async_update_reload_and_abort(
+                    entry,
+                    title=info["title"],
+                    data=user_input,
+                )
+
+        current = entry.data
+        reconfigure_schema = vol.Schema(
+            {
+                vol.Required(CONF_HOST, default=current.get(CONF_HOST, DEFAULT_HOST)): str,
+                vol.Required(CONF_API_KEY, default=current.get(CONF_API_KEY, "")): str,
+                vol.Required(CONF_SITE, default=current.get(CONF_SITE, DEFAULT_SITE)): str,
+                vol.Optional(CONF_VERIFY_SSL, default=current.get(CONF_VERIFY_SSL, DEFAULT_VERIFY_SSL)): bool,
+            }
+        )
+
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=reconfigure_schema,
+            errors=errors,
+        )
+
 
 class CannotConnect(Exception):
     """Error to indicate we cannot connect."""
