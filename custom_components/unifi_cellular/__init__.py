@@ -58,11 +58,8 @@ class UniFiCellularCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.site = entry.data[CONF_SITE]
         self.verify_ssl = entry.data.get(CONF_VERIFY_SSL, False)
 
-        self._ssl_context: ssl.SSLContext | None = None
-        if not self.verify_ssl:
-            self._ssl_context = ssl.create_default_context()
-            self._ssl_context.check_hostname = False
-            self._ssl_context.verify_mode = ssl.CERT_NONE
+        self._ssl_context: ssl.SSLContext | bool | None = None
+        self._ssl_initialized = False
 
         super().__init__(
             hass,
@@ -71,8 +68,23 @@ class UniFiCellularCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             update_interval=DEFAULT_SCAN_INTERVAL,
         )
 
+    async def _ensure_ssl_context(self) -> None:
+        """Create SSL context in executor to avoid blocking the event loop."""
+        if self._ssl_initialized:
+            return
+        if not self.verify_ssl:
+            self._ssl_context = await self.hass.async_add_executor_job(
+                ssl.create_default_context
+            )
+            self._ssl_context.check_hostname = False
+            self._ssl_context.verify_mode = ssl.CERT_NONE
+        else:
+            self._ssl_context = None
+        self._ssl_initialized = True
+
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from UniFi controller."""
+        await self._ensure_ssl_context()
         try:
             async with aiohttp.ClientSession() as session:
                 devices = await self._fetch_all_devices(session)

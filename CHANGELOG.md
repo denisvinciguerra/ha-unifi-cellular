@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.2.3
+
+- Fix blocking call to `ssl.create_default_context()` in event loop — SSL context now created via `async_add_executor_job`
+
 ## v0.2.1
 
 - **Dynamic WAN interface detection**: the integration now automatically detects which WAN interface (WAN, WAN2, WAN3...) is associated with the cellular device, instead of hardcoding WAN3
